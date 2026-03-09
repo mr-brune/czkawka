@@ -531,7 +531,8 @@ impl SameMusic {
     }
 }
 
-// Keep this logic aligned with rusty-chromaprint compare behavior.
+// Local helper: rusty-chromaprint does not expose a reusable file-decoding fingerprint API.
+// We use the public Fingerprinter API and keep behavior compatible with upstream examples.
 fn calc_fingerprint_helper<P: AsRef<Path>>(path: P, config: &Configuration) -> Result<Vec<u32>, String> {
     let path = path.as_ref().to_path_buf();
     panic::catch_unwind(|| {
