@@ -531,7 +531,7 @@ impl SameMusic {
     }
 }
 
-// TODO this should be taken from rusty-chromaprint repo, not reimplemented here
+// Keep this logic aligned with rusty-chromaprint compare behavior.
 fn calc_fingerprint_helper<P: AsRef<Path>>(path: P, config: &Configuration) -> Result<Vec<u32>, String> {
     let path = path.as_ref().to_path_buf();
     panic::catch_unwind(|| {
@@ -570,10 +570,17 @@ fn calc_fingerprint_helper<P: AsRef<Path>>(path: P, config: &Configuration) -> R
 
         let mut printer = Fingerprinter::new(config);
         let sample_rate = track.codec_params.sample_rate.ok_or_else(|| "missing sample rate".to_string())?;
-        let channels = track.codec_params.channels.ok_or_else(|| "missing audio channels".to_string())?.count() as u32;
+        let channels = track
+            .codec_params
+            .channels
+            // Some codecs expose only channel layout. This mirrors the upstream compare tool behavior.
+            .or_else(|| track.codec_params.channel_layout.map(|v| v.into_channels()))
+            .ok_or_else(|| "missing audio channels".to_string())?
+            .count() as u32;
         printer.start(sample_rate, channels).map_err(|_| "initializing fingerprinter".to_string())?;
 
         let mut sample_buf = None;
+        let mut consumed_any_samples = false;
 
         loop {
             let Ok(packet) = format.next_packet() else {
@@ -595,11 +602,16 @@ fn calc_fingerprint_helper<P: AsRef<Path>>(path: P, config: &Configuration) -> R
                     if let Some(buf) = &mut sample_buf {
                         buf.copy_interleaved_ref(audio_buf);
                         printer.consume(buf.samples());
+                        consumed_any_samples = true;
                     }
                 }
                 Err(symphonia::core::errors::Error::DecodeError(_)) => (),
                 Err(_) => break,
             }
+        }
+
+        if !consumed_any_samples {
+            return Err("no decodable audio samples".to_string());
         }
 
         printer.finish();
