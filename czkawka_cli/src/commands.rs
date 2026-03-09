@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-
 #[cfg(not(feature = "no_colors"))]
 use clap::builder::Styles;
 #[cfg(not(feature = "no_colors"))]
