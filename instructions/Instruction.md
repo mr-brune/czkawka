@@ -421,7 +421,7 @@ Both error types are reported in the results.
 This tool finds duplicate or similar music files by comparing metadata tags or audio content.
 
 **Process**
-- Collects music files with extensions: `mp3`, `flac`, `m4a`
+- Collects music files with extensions: `mp3`, `flac`, `m4a`, `opus`
 - Reads metadata tags: `artist`, `title`, `year`, `bitrate`, `genre`, `length`
 
 **Duplicate Tags Mode**
